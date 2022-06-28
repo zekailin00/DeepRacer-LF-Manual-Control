@@ -1,0 +1,10 @@
+// src/Main.lf
+target CCpp;
+import Joystick from "Joystick.lf"
+import Servo from "Servo.lf"
+
+federated reactor {
+    Joystick = new Joystick();
+    Servo = new Servo();
+    Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
+}
