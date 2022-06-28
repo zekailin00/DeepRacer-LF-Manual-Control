@@ -1,6 +1,7 @@
 // src/Servo.lf
 target CCpp {
-    cmake-include: "include/composition.cmake"
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
 };
 
 preamble {=
@@ -35,13 +36,13 @@ reactor Servo {
     =}
 
     reaction(servo_msg) {=
-        lf_print("[LF::Servo::servo_msg] Angle: %f, Throttle %f", servo_msg->value->angle, servo_msg->value->throttle);
-        //self->pServeMgr->servoSubscriber(in->value);
+        //lf_print("[LF::Servo::servo_msg] Angle: %f, Throttle %f", servo_msg->value->angle, servo_msg->value->throttle);
+        self->pServoMgr->servoSubscriber(servo_msg->value);
     =}
 
     reaction(raw_pwm) {=
-        lf_print("[LF::Servo::raw_pwm] Angle: %f, Throttle %f", raw_pwm->value->angle, raw_pwm->value->throttle);
-        //self->pServeMgr->rawPWMSubscriber(in->value);
+       // lf_print("[LF::Servo::raw_pwm] Angle: %f, Throttle %f", raw_pwm->value->angle, raw_pwm->value->throttle);
+        self->pServoMgr->rawPWMSubscriber(raw_pwm->value);
     =}
 
     reaction(shutdown) {=

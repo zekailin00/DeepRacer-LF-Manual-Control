@@ -1,6 +1,7 @@
 // src/Joystick.lf
 target CCpp {
-    cmake-include: "include/composition.cmake"
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
 };
 
 preamble {=
@@ -11,7 +12,7 @@ reactor Joystick {
     // Instantiate the publisher node as a sate variable
     state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
     output servo_msg:std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
-    timer t(0, 5 ms);
+    timer t(0, 50 ms);
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
@@ -24,10 +25,18 @@ reactor Joystick {
     reaction(startup) {=
         // Initialize rclcpp
         rclcpp::init(0, NULL);
+
+        std::cout<< "[LF] Initialize DeepRacerControl node;"<<std::endl;
+
         self->joystick_node = std::make_shared<DeepRacerJoyControl>();
+
+        std::cout<< "[LF] Finish initializing DeepRacerControl node;"<<std::endl;
 
         self->JOYSTICK_DEV = "/dev/input/js0";
         self->count_ = 0;
+
+
+        std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
 
         self->joystick_fd = open(self->JOYSTICK_DEV.c_str(), O_RDONLY | O_NONBLOCK);
         if (self->joystick_fd < 0) 
@@ -36,16 +45,24 @@ reactor Joystick {
             exit(1);
         }
 
+        std::cout<< "[LF] Read joystick meta data."<<std::endl;
+
         ioctl(self->joystick_fd, JSIOCGAXES, &(self->num_of_axis));
+        std::cout<< "joystick Number of Axes: " << self->num_of_axis<<std::endl;
+        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Axes: %d", self->num_of_axis);
+
         ioctl(self->joystick_fd, JSIOCGBUTTONS, &(self->num_of_buttons));
-        ioctl(self->joystick_fd, JSIOCGNAME(80), &(self->name_of_joystick));
+        std::cout << "Joystick Number of Buttons: " << self->num_of_buttons<<std::endl;
+        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Buttons: %d", self->num_of_buttons);
+
+        ioctl(self->joystick_fd, JSIOCGNAME(80), self->name_of_joystick); //TODO:
+        std::cout << "Joystick Connected: " << self->name_of_joystick<<std::endl;
+        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Connected: %s", self->name_of_joystick);
     
         self->data.joy_button.resize(self->num_of_buttons, 0);
         self->data.joy_axis.resize(self->num_of_axis, 0);
 
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Connected: %s", self->name_of_joystick);
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Axes: %d", self->num_of_axis);
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Buttons: %d", self->num_of_buttons);
+        std::cout<< "[LF] Finished reactor startup."<<std::endl;
     =}
 
     reaction(t) -> servo_msg {=
@@ -68,8 +85,6 @@ reactor Joystick {
         std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>();  
         servoMsg->angle = -(static_cast<float>(self->data.joy_axis[0])/INT16_MAX);
         servoMsg->throttle = -(static_cast<float>(self->data.joy_axis[1])/INT16_MAX); 
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Active Angle: '%f'", servoMsg->angle); 
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Active Throttle: '%f'", servoMsg->throttle); 
         lf_set(servo_msg, servoMsg);
     =}
 

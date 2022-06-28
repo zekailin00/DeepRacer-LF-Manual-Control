@@ -1,5 +1,7 @@
 // src/Main.lf
-target CCpp;
+target CCpp{
+    coordination: decentralized
+};
 import Joystick from "Joystick.lf"
 import Servo from "Servo.lf"
 
