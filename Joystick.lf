@@ -10,9 +10,9 @@ preamble {=
 
 reactor Joystick {
     // Instantiate the publisher node as a sate variable
-    state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
+    //state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
     output servo_msg:std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
-    timer t(0, 50 ms);
+    timer t(0, 25 ms);
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
@@ -24,13 +24,7 @@ reactor Joystick {
 
     reaction(startup) {=
         // Initialize rclcpp
-        rclcpp::init(0, NULL);
-
-        std::cout<< "[LF] Initialize DeepRacerControl node;"<<std::endl;
-
-        self->joystick_node = std::make_shared<DeepRacerJoyControl>();
-
-        std::cout<< "[LF] Finish initializing DeepRacerControl node;"<<std::endl;
+        //rclcpp::init(0, NULL);
 
         self->JOYSTICK_DEV = "/dev/input/js0";
         self->count_ = 0;
@@ -41,7 +35,7 @@ reactor Joystick {
         self->joystick_fd = open(self->JOYSTICK_DEV.c_str(), O_RDONLY | O_NONBLOCK);
         if (self->joystick_fd < 0) 
         {
-            RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick error: %d", self->joystick_fd); 
+            lf_print( "[LF] Joystick error: %d", self->joystick_fd); 
             exit(1);
         }
 
@@ -49,15 +43,15 @@ reactor Joystick {
 
         ioctl(self->joystick_fd, JSIOCGAXES, &(self->num_of_axis));
         std::cout<< "joystick Number of Axes: " << self->num_of_axis<<std::endl;
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Axes: %d", self->num_of_axis);
+        lf_print("Joystick Number of Axes: %d", self->num_of_axis);
 
         ioctl(self->joystick_fd, JSIOCGBUTTONS, &(self->num_of_buttons));
         std::cout << "Joystick Number of Buttons: " << self->num_of_buttons<<std::endl;
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Number of Buttons: %d", self->num_of_buttons);
+        lf_print( "Joystick Number of Buttons: %d", self->num_of_buttons);
 
         ioctl(self->joystick_fd, JSIOCGNAME(80), self->name_of_joystick); //TODO:
         std::cout << "Joystick Connected: " << self->name_of_joystick<<std::endl;
-        RCLCPP_INFO(self->joystick_node->get_logger(), "Joystick Connected: %s", self->name_of_joystick);
+        lf_print( "Joystick Connected: %s", self->name_of_joystick);
     
         self->data.joy_button.resize(self->num_of_buttons, 0);
         self->data.joy_axis.resize(self->num_of_axis, 0);
@@ -89,6 +83,6 @@ reactor Joystick {
     =}
 
     reaction(shutdown) {=
-        rclcpp::shutdown();
+        //rclcpp::shutdown();
     =}
 }
