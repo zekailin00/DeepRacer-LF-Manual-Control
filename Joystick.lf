@@ -61,24 +61,37 @@ reactor Joystick {
 
     reaction(t) -> servo_msg {=
         self->count_++;
-        js_event js;
-        read(self->joystick_fd, &js, sizeof(js_event));
+        js_event js, prev_js;
+        int retval;
+        bool emptyQueue = false;
+        lf_print( "Enter while(read)...");
+        int while_count = 0; 
+        while (retval = read (self->joystick_fd, &js, sizeof(js_event)) > 0) {
+            prev_js = js;
+            while_count++;
 
-        switch (js.type & ~JS_EVENT_INIT)
-        {
-        case JS_EVENT_AXIS:
-            if(!((int)js.number>=self->data.joy_axis.size()))
-            self->data.joy_axis[(int)js.number]= js.value;
-            break;
-        case JS_EVENT_BUTTON:
-            if(!((int)js.number>=self->data.joy_button.size()))
-            self->data.joy_button[(int)js.number]= js.value;
-            break;
+            switch (prev_js.type & ~JS_EVENT_INIT)
+                {
+                case JS_EVENT_AXIS:
+                    if(!((int)prev_js.number>=self->data.joy_axis.size()))
+                    self->data.joy_axis[(int)prev_js.number]= prev_js.value;
+                    break;
+                case JS_EVENT_BUTTON:
+                    if(!((int)prev_js.number>=self->data.joy_button.size()))
+                    self->data.joy_button[(int)prev_js.number]= prev_js.value;
+                    break;
+            }
         }
-        
+
+        lf_print( "Exit while(read) - Return value of read is: %d", retval);
+        lf_print( "Exit while(read) - while count: %d", while_count);
+
         std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>();  
         servoMsg->angle = -(static_cast<float>(self->data.joy_axis[0])/INT16_MAX);
         servoMsg->throttle = -(static_cast<float>(self->data.joy_axis[1])/INT16_MAX); 
+        auto physical_time = get_elapsed_physical_time();
+        lf_print( "physical time: %lld", physical_time);
+        lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
         lf_set(servo_msg, servoMsg);
     =}
 
